@@ -126,6 +126,9 @@ BBLAYERS ?= " \
 	- The most common starting point is the `core-image-base.bb` image, which can be found within `/path/to/yocto_ws/poky/meta/recipes-core/images/core-image-base.bb`
 + A good reference how to create your own layer is: https://hub.mender.io/t/how-to-create-custom-images-using-yocto-project/902
 
++ ***After we build the `core-image-minimal`, we have build the poky reference distribution for our STM32. We do NOT have build a custom Linux for our board!***
+	- In order to create a custom image, we need to create our own layer which contains our own distribution configuration! See `README.custom_layer.md` for details!
+
 ### Cleaning up the build folder:
 + If you want to recompile everything, just run `$ rm -rf /tmp` within the build folder
 	- Within the `/path/to/yocto_ws/<buildfolder>` folder, all binarys/compiled code is placed into the `/tmp` folder!
@@ -139,3 +142,76 @@ BBLAYERS ?= " \
 + Yocto has an overwrite policy, so if a higher abstracted layer (indicated by a number that every layer needs) overwrites the configuration of a lower layer, it will just overwrite it!
 	- Another possability is that you can use `.bbappend` files to append something to another confuguration
 
+# Flashing a SD-Card
++ The easiest way of flashing an image to your device is hardcopying an .img file to your SD-Card/flash storage. Unfortunatily, not all vendors support such an easy way of flashing, which is also the case for the STM32!
++ If you do not have the possibility to flash an .img file directly, you need to have a look at the vendors manual for the chip. There *should* be an instruction how the boot process for the chip/board works.
+	- In case of the STM32, this can be lookup within the [manual](https://www.st.com/content/ccc/resource/training/technical/product_training/group1/ac/45/53/56/1f/0b/47/68/STM32MP1-Software-Platform_boot_BOOT/files/STM32MP1-Software-Platform_boot_BOOT.pdf/_jcr_content/translations/en.STM32MP1-Software-Platform_boot_BOOT.pdf) at page 32 (_Flash Partitions_)
+	- Here are the expected sizes to the individual components
+		* The sizes are relevant because the FSBL and SSBL have limited memory availablility and they are loading the bootfs which also needs to fit completly into RAM
+	- Sizes are:
+		* FSBL: 256KB
+		* SSBL: 2MB
+		* bootfs: 64MB
+		* rootfs: 768MB (or more)
+		* userfs: the rest - this is not needed but good for security, since we then have a sandbox for the user and he could not modify the rootfs
++ ***CAUTION***: STM32MP1 needs to have the SD card formated with a GUID Partition Table (GPT)! (And not with the older technology, a MBR - Master Boot Record -)
+	- The ROM STM32MP1 firmware looks for a GPT during the boot process! If it does not find one, the boot will fail!
+	- If a MBR is still on the card, it will skip this memory
++ ***CAUTION***: The STM32MP1 has a proprietary flash program (STM32CubeProgrammer). This reads `.tsv` files and flashes the bitbake output to the board. Since we want to learn something about boot chains, we avoid using this convenience tool and create our own boot chain and flash the binarys to the SD card manually, using the `dd` command
+	- But the `.tsv` files can give us a hint how to name your partitions and how big they need to be as well as which binarys are needed to flash to which partition. You can lookup the file for the _core-image-minimal_ that we have build with bitbake before under the path: `/path/to/yocto_ws/build_kirkstone/tmp/deploy/images/stm32mp1/flashlayout_core-image-minimal/trusted/FlashLayout_sdcard_stm32mp157a-dk1-trusted.tsv`
+		* fsbl1-boot and the FIP lines within the `.tsv` file have nothing to do with the actual SD card partitioning, so we can ignore them for now 
++ ***CAUTION***: The name of the partitions might be relevant to be able to boot your hardware properly (especially if the ROM that comes from the vendor checks the names of the partitions that it can find on the SD-Card!)
+
+## Standart linux boot chain
++ You can compare a boot chain to a space rocket, that has multiple chapters that are thrown away during its launch into space. The useful component (usable payload of the rocket, which is the running linux system in our component) is the last and persisting artifact of the (launch-) boot chain! 
++ Most MPUs that run on linux have a similar structured boot chain:
+	- 1.: ROM - Firmware that is embedded within the ROM (read only memory). It is fixed and can not be modifyed by the user. Commonly, clocks and basic electronic setups are initialized by that
+	- 2.: FSBL - First Stage Boot Loader. This is the first self-written code (from a users perspective) that is executed on the device. It initialized some hardware/periferials, especially the RAM and instructs the RAM to load the seconds stage bootloader (SSBL). Commonly, the FSBL has a size around 512 KB such that it can initialize and load other code to RAM that can do more complex things (like starting up the linux kernel)
+	- 3.: SSBL - Second Stage Boot Loader. Shows the spash screen and loads to linux kernel to RAM from one of multiple possibilities where to load it from (disk, USB, ethernet, ...). Also it loads the filesystem (e.g. bootfs) from mass storage and the device tree. The last instruction of the SSBL is a jump to the linux kernels entrypoint. Examples of SSBLs are u-boot and grub
+	- 4.: Linux kernel starting up. Initializing device drivers and mounting the rootfs. Last step of starting the linux kernel is to start the init.d process (Process with PID 0 from which all other processes are derived). After this, the kernel enables the user mode and dispriveleges itself.
+	- 5.: Linux user space
++ On STM32MP1 we have the following common boot chain:
+	- 1: Comes from STM
+	- 2: Arm Trusted Firmware (runs under BSD-Licence, which enables the user to hide boot chain implementations)
+	- 3: U-Boot
++ Reference: https://www.youtube.com/watch?v=4INh-8onLn0 / https://www.st.com/content/ccc/resource/training/technical/product_training/group1/ac/45/53/56/1f/0b/47/68/STM32MP1-Software-Platform_boot_BOOT/files/STM32MP1-Software-Platform_boot_BOOT.pdf/_jcr_content/translations/en.STM32MP1-Software-Platform_boot_BOOT.pdf
+
+## Partitioning of a SD-Card
++ Before we can flash our SD-Card, we need to unmount all mounted partitions but without ejecting the SD-Card itself!
+	- Type `$ lsblk` to show the partitons as well as their mount positions on your host computer
+	- If (especially the rootfs) is mounted on your host, type `umount /path/to/mountpoint`
+	- Do this with all mounted partitions! ==> After that, we are ready to flash our SD-Card
++ To partition our SD-Card, we use a tool called `$ fdisk` (`$ sudo apt install gdisk`, because g stands for GPT)
++ fdisk is a little less harmful, since it executes the changes you made at the end and has some security checking implemented. If you use gdisk (which is the underlying program of fdisk), everthing is executed directly. The propablility of damaging your system is therefore much higher with gdisk then with fdisk
++ fdisk intro:
+	- Since we edit partitions, we need to execute fdisk with root privileges! `$ sudo fdisk /path/to/devicefile`, e.g. `$ sudo fdisk /dev/sdb`
+	- `m`: Show help
+	- `p`: Show partitions - here we can also see the _Disklabel type_ which is defined as GPT or DOS/MBR. Here we need GPT, since the STM32MP1 requires this as its partition table!
+	- `d`: Delete partition - type d as long as you have partitions to delete all partitions on your SD-Card
+	- `g`: Convert the partition table to GPT
+	- `o`: Convert the partition table to DOS/MBR
+	- `n`: Start the _create new partition_ dialog
+	- `t`: Change the partition type - with the upcoming dialog, you can type `L` to show all available partition types (`11` is _Microsoft Basic Data_, which is what we want for our FSBL)
+	- `x`: Start expert mode (e.g. to name your partitions)
+		* `n`: Name a partition
+		* `A`: Set legacy bios boot flag
+	- `r`: Go back to regular mode (if you were in expert mode before)
+	- `w`: Write changes to disk
+
+### Flash sectors
++ Flash storage is separated into multiple (hardware) sectors. One sector is the least amount of memory that we can delete, so we can place our data only at sector boundarys!
++ fdisk can place partitions at sector boundarys! We can give it a start and an end sector
+	- But in order to have a defined size of the sector, we can use the _new partition dialog_ to set it with the following example:
+	```
+	First sector (2048-15130590, default 2048): 
+	Last sector, +/-sectors or +/-size{K,M,G,T,P} (2048-15130590, default 15130590): +256KiB
+	```
+	  , here we created a partition with the start sector boundary at 2048 Byte and the end sector is automatically choosen based on the size of the hardware sectors and the demanded size of the partition
+
+## Tricks to make the manual SD-Card flashing work on Yocto Kirkstone
++ You need to add the ATF metadata1 and metadata2 partitions as Microsoft Basic Data partitions and copy the `arm-trusted-firmware/metadata.bin` to them
+	+ The partitions need to be 512KiB big
++ Also you need to set the UUID of the fip partition to `4FD84C93-54EF-463F-A7EF-AE25FF887087` (See https://hub.mender.io/t/stm32mp1-yocto-kirkstone-issues/5331)
++ Also, you need to edit the file on the `bootfs` partition (`/dev/sdb6`) `/mmc0_extlinux/extlinux.conf`, the `root=PARTUUID=<UUID>` value
+	* You can see the value for the UUID of rootfs (`/dev/sdb7`) within expert mode in fdisk
++ _Or you just use STM32MPCubeProgrammer with the `.tsi` file to flash the SD card_

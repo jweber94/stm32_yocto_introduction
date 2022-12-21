@@ -1,0 +1,40 @@
+bitbake core-image-minimal
+Loading cache: 100% |                                                                                                                                                                      | ETA:  --:--:--
+Loaded 0 entries from dependency cache.
+Parsing recipes: 100% |#####################################################################################################################################################################| Time: 0:05:44
+Parsing of 2241 .bb files complete (0 cached, 2241 parsed). 3640 targets, 127 skipped, 0 masked, 0 errors.
+NOTE: Resolving any missing task queue dependencies
+
+Build Configuration:
+BB_VERSION           = "2.0.0"
+BUILD_SYS            = "x86_64-linux"
+NATIVELSBSTRING      = "ubuntu-20.04"
+TARGET_SYS           = "arm-poky-linux-gnueabi"
+MACHINE              = "stm32mp1"
+DISTRO               = "poky"
+DISTRO_VERSION       = "4.0.6"
+TUNE_FEATURES        = "arm vfp cortexa7 neon vfpv4 thumb callconvention-hard"
+TARGET_FPU           = "hard"
+meta                 
+meta-poky            
+meta-yocto-bsp       = "HEAD:c4e08719a782fd4119eaf643907b80cebf57f88f"
+meta-oe              
+meta-python          = "HEAD:50d4a8d2a983a68383ef1ffec2c8e21adf0c1a79"
+meta-st-stm32mp      = "HEAD:ca501bd7dbe023682903ceedddaacd940b0898f4"
+
+NOTE: Fetching uninative binary shim http://downloads.yoctoproject.org/releases/uninative/3.7/x86_64-nativesdk-libc-3.7.tar.xz;sha256sum=b110bf2e10fe420f5ca2f3ec55f048ee5f0a54c7e34856a3594e51eb2aea0570 (will check PREMIRRORS first)
+Initialising tasks: 100% |##################################################################################################################################################################| Time: 0:00:05
+Sstate summary: Wanted 1264 Local 0 Mirrors 0 Missed 1264 Current 0 (0% match, 0% complete)
+NOTE: Executing Tasks
+WARNING: libxml2-native-2.9.14-r0 do_fetch: Checksum mismatch for local file /home/jens/Desktop/intro_to_embedded_linux/yocto_ws/build_kirkstone/downloads/xmlts20080827.tar.gz
+Cleaning and trying again.
+WARNING: libxml2-native-2.9.14-r0 do_fetch: Renaming /home/jens/Desktop/intro_to_embedded_linux/yocto_ws/build_kirkstone/downloads/xmlts20080827.tar.gz to /home/jens/Desktop/intro_to_embedded_linux/yocto_ws/build_kirkstone/downloads/xmlts20080827.tar.gz_bad-checksum_9b2c865aba66c6429ca301a7ef048d7eca2cdb7a9106184416710853c7b37d0d
+WARNING: libxml2-native-2.9.14-r0 do_fetch: Checksum failure encountered with download of http://www.w3.org/XML/Test/xmlts20080827.tar.gz;subdir=libxml2-2.9.14;name=testtar - will attempt other sources if available
+NOTE: Tasks Summary: Attempted 3338 tasks of which 0 didn't need to be rerun and all succeeded.
+
+Summary: There were 3 WARNING messages.
+
+---------------------------------------------
+
+Path: /home/jens/Desktop/intro_to_embedded_linux/yocto_ws/build_kirkstone/tmp/deploy/images/stm32mp1
+
