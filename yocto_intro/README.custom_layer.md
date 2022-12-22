@@ -52,7 +52,7 @@
 
 ## Tipps by creating custom layers and images
 + By defining and append/overwrite variables within your layer, you tweak/modify your image and/or distribution
-
++ After our (custom) image has been build, we have a `<name_of_the_image>.manifest` file within the `/path/to/yocto_ws/build_kirkstone/tmp/deploy/images/` folder, which contains a list of all packages in our image
 ### Images
 + It is good practice to make the rootfs only as big as it needs to be. This enhances the security, since a hacker is not able to install mallicious software on it that needs much filesystem space
 + To add useres to your linux image, you can inherit from the `/path/to/yocto_ws/poky/meta/classes/extrausers.bbclass`
