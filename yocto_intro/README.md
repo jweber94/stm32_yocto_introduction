@@ -45,6 +45,7 @@
 	- Poky is a good starting point to develop a custom linux distribution based on your own requirements without starting completly from scratch
 	- Based on poky, we can add our own layers for our board to create a custom linux image
 + Poky can be downloaded with git from here: https://www.yoctoproject.org/software-item/poky/
++ Directory structure and their meanings is described here: https://docs.yoctoproject.org/ref-manual/structure.html
 
 ## Yocto releases
 + Like always in software engineering, version compatibility is key when it comes to interaction of various software components! Therefore, yocto has a release cycle with LTS and non-LTS versions that you should use to compile a linux distribution with properly interacting software components!
@@ -215,3 +216,8 @@ BBLAYERS ?= " \
 + Also, you need to edit the file on the `bootfs` partition (`/dev/sdb6`) `/mmc0_extlinux/extlinux.conf`, the `root=PARTUUID=<UUID>` value
 	* You can see the value for the UUID of rootfs (`/dev/sdb7`) within expert mode in fdisk
 + _Or you just use STM32MPCubeProgrammer with the `.tsi` file to flash the SD card_
+
+# TODOs
++ Finish custom_application TODOs
++ Add realtime patch to your custom image
++ Implement a little project where pressure an temperature is read out from the sensor with a real time thread
