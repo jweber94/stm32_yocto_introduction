@@ -217,6 +217,10 @@ BBLAYERS ?= " \
 	* You can see the value for the UUID of rootfs (`/dev/sdb7`) within expert mode in fdisk
 + _Or you just use STM32MPCubeProgrammer with the `.tsi` file to flash the SD card_
 
+## Important `bitbake` commands
++ `$ bitbake -e`: Shows all environment variables and how they are set.
+	- Commonly used with `$ bitbake -e | grep <variablename>`
+	- E.g. if you want to know for what kernel name we are building our image for, use `$ bitbake -e | grep virtual/kernel` (which leads to _linux-stm32mp_ in our case)
 # TODOs
 + Finish custom_application TODOs
 + Add realtime patch to your custom image
