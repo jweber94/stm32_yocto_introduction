@@ -95,3 +95,15 @@ KERNEL_MODULE_AUTOLOAD:append = " r8188eu"
 + `$ iw dev <network_interface> link`: Shows information about your currently connected connection
 + `$ rfkill list`: Show all interfaces and their current state
 + More information can be found here: https://www.linuxbabe.com/command-line/ubuntu-server-16-04-wifi-wpa-supplicant
+
+## Make the WLAN dongle working
++ Check if the wlan dongle is found (USB autoconnect --> Driver gets loaded automatically)
+	- `$ ifconfig -a`: The `-a` shows all networking interfaces
+	- If you are not sure if the dongle driver is properly installed, ls the following:
+		* `$ ls /lib/modules/5.15.67/kernel/drivers/staging/` is there is a subfolder with your drivers name, the driver was successfully installed by yocto/bitbake
++ Append your WLAN credentials to your `/etc/wpa_supplicant.conf`
+	- `$ wpa_passphrase "mySSID" "myPassword" >> /etc/wpa_supplicant.conf`
++ Run the the wpa_supplicant tool to startup the device with the newly set `wpa_supplicant.conf` (with your WLAN credentials)
+	- `$ wpa_supplicant -B -i wlan0, -D wext -c /etc/wpa_supplicant.conf`
++ Get your DHCP IP-address from the router/DHCP server
+	- `$ udhcpc -i wlan0`

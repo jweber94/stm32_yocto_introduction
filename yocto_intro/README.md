@@ -221,6 +221,12 @@ BBLAYERS ?= " \
 + `$ bitbake -e`: Shows all environment variables and how they are set.
 	- Commonly used with `$ bitbake -e | grep <variablename>`
 	- E.g. if you want to know for what kernel name we are building our image for, use `$ bitbake -e | grep virtual/kernel` (which leads to _linux-stm32mp_ in our case)
+
+## Common and important yocto knowlage
++ The first time we create a build, bitbake will create a `.config` file where all kernel settings are stored within
+	- Look for it with `$ cd tmp && find . -type f -name ".config"`
+	- We do ***NOT*** want to edit the `.config` file manually! Always do this with `$ bitbake -c menuconfig virtual/kernel`
+
 # TODOs
 + Finish custom_application TODOs
 + Add realtime patch to your custom image
